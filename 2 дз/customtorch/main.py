@@ -41,7 +41,7 @@ xs = [
 ]
 ys = [1.0, -1.0, -1.0, 1.0] # desired targets
 
-for k in range(150):
+for k in range(50):
     
     model.zero_grad()
     
