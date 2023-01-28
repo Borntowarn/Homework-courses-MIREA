@@ -1,0 +1,20 @@
+name: M2
+params:
+  len_alphabet: 93
+  num_layers: 5 # Numerate starts from 1
+
+  increase_channels_layers: [1, 2, 3, 4] # after 1, 2, 4 layers channels mult by 2
+  modules_seq: CABM # Conv, Act, MaxPool, BatchNorm
+  modules_freq: [1, 1, 1, 1] # CABM every 1 layer
+
+  conv_kernel_size: 5
+  conv_stride: 2
+  conv_padding: 3
+
+  pool_kernel_size: 2
+  pool_stride: 2
+  pool_padding: 0
+
+  activation: ReLU
+
+  rnn_type: LSTM

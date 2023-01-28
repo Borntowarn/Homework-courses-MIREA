@@ -1,0 +1,5 @@
+name: S2
+scheduler: OneCycleLR
+params:
+  total_steps: 20 # total epochs
+  max_lr: 0.0005

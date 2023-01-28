@@ -1,0 +1,4 @@
+name: O1
+optim: Adam
+params:
+  lr: 0.0003

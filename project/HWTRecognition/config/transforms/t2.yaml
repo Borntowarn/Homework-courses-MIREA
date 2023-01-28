@@ -1,0 +1,22 @@
+name: T2
+params:
+  Grayscale:
+    params:
+      num_output_channels: 1
+    prob: 0
+  ColorJitter:
+    params:
+      brightness: 0
+      contrast: [2, 3]
+      saturation: 0
+      hue: 0
+    prob: 1
+  GaussianBlur:
+    params:
+      kernel_size: [3, 3]
+    prob: 0
+  Resize:
+    params:
+      size: [64, 256]
+    prob: 1
+  

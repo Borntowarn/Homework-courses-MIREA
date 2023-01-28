@@ -1,0 +1,20 @@
+name: Experiment 1
+
+logging: True # if False wandb will not log
+id_resume: 1lxtdet5 # if not none wandb will continue log for this id run
+
+transforms: t1 # File of transfroms config
+model: m1 # File of model config
+scheduler: s3 # File of scheduler config
+optim: o2 # File of optim config
+
+train: # Train dirs
+  dir: ../input/hwt-russian-dataset/dataset/dataset/train
+  labels: ../input/hwt-russian-dataset/dataset/dataset/train.tsv
+test: # Test dirs
+  dir: ../input/hwt-russian-dataset/dataset/dataset/test/
+  labels: ../input/hwt-russian-dataset/dataset/dataset/test.tsv
+
+epochs: 10
+batch: 8 # Если ставить батч 16, то лосс не падает
+device: cuda

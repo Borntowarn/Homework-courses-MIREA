@@ -1,0 +1,5 @@
+name: S1
+scheduler: StepLR
+params:
+  step_size: 8 # epochs for one step
+  gamma: 0.1

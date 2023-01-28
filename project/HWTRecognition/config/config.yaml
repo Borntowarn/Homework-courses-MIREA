@@ -1,0 +1,21 @@
+name: Experiment 1
+
+logging: False # if False wandb will not log
+id_resume: null # if not none wandb will continue log for this id run
+
+transforms: t1 # File of transfroms config
+model: m1 # File of model config
+scheduler: s2 # File of scheduler config or null for no scheduler
+optim: o1 # File of optim config
+
+train: # Train dirs
+  dir: ./dataset/train/
+  labels: ./dataset/train.tsv
+test: # Test dirs
+  dir: ./dataset/test/
+  labels: ./dataset/test.tsv
+
+epochs: 20
+train_batch: 8 # Если ставить батч 16, то лосс не падает
+test_batch: 16
+device: cuda
