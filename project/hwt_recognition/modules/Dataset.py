@@ -1,8 +1,8 @@
 import os
+import torch
 import pandas as pd
 
 from PIL import Image
-from torch import Tensor
 from torchvision import transforms
 from torch.utils.data import Dataset
 
@@ -19,8 +19,8 @@ class HWTDataset(Dataset):
         self,
         root_dir: str,
         label_dir: str,
-        transforms: transforms.Compose = None) -> None:
-        
+        transforms: transforms.Compose = None
+    ) -> None:
         super(HWTDataset, self).__init__()
         
         # Loading labling file
@@ -34,8 +34,8 @@ class HWTDataset(Dataset):
     def __len__(self) -> int:
         return len(self.data)
     
-        
-    def __getitem__(self, index: int) -> tuple[Tensor, str]:
+    
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, str]:
         
         path, label = self.data[index]
         img = Image.open(path).convert('RGB')

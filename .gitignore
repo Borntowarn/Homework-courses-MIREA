@@ -3,10 +3,18 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Datasets
 dataset
+datasets/*
+!datasets/*.md
+
+# WANDB
 wandb
+
+# Trained models
 models
 
+# Archives
 *.zip
 *.rar
 *.pth

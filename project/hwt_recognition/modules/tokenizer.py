@@ -1,31 +1,30 @@
 import torch
 
-from torch import Tensor
-from typing import Union
 from ctc_decoder import beam_search
+from typing import Union, Iterable, Tuple
 
-class SymbolCoder:
+class Tokenizer:
     """
     Class needs to encode initial phrases to Tensor
     and decode predicted labels to phrases
     """
     
-    def __init__(self, alphabet) -> None:
+    def __init__(self, alphabet: Iterable[str]) -> None:
         
         self.alphabet = ''.join(sorted(alphabet))
         self.sym2class, self.class2sym = {'' : 0}, {0 : ''}
         
         for num, alpha in enumerate(self.alphabet):
-            self.sym2class[alpha] = num + 1
-            self.class2sym[num + 1] = alpha
+            self.sym2class[alpha] = num + 1 # symbol to label 
+            self.class2sym[num + 1] = alpha # label to symbol
     
     
-    def encode(self, text) -> tuple[Tensor, Tensor]:
+    def encode(self, text: list[str]) -> Tuple[torch.IntTensor, torch.IntTensor]:
         """
         This method encode initial phrases to Tensor
 
         Args:
-            text (list): Initial phrases for encode
+            text (list[str]): Initial phrases for encode
 
         Returns:
             tuple: First value is a tensor of phrases labels, second is lengths of phrases
@@ -34,23 +33,23 @@ class SymbolCoder:
         length = []
         result = []
         
-        for word in text:
-            length.append(len(word))
-            for alpha in word:
+        for phrase in text:
+            length.append(len(phrase))
+            for alpha in phrase:
                 if alpha in self.alphabet: 
                     result.append(self.sym2class[alpha])
                 else: result.append(0)
         
-        return (torch.tensor(result, dtype=torch.int64), torch.tensor(length, dtype=torch.int64))
+        return (torch.IntTensor(result), torch.IntTensor(length))
     
     
-    def decode(self, text, length) -> Union[str, list]:
+    def decode(self, text: torch.Tensor, length: torch.IntTensor) -> Union[str, list]:
         """
         This method used for decoding prediction labels to text
 
         Args:
-            text (Tensor): predicted labels of symbols
-            length (Tensor): lengths of prediction phrases
+            text (torch.Tensor): predicted labels of symbols
+            length (torch.IntTensor): lengths of prediction phrases
 
         Returns:
             Union[str, list]: list type returns when use for batch, for single word returns str
@@ -78,7 +77,18 @@ class SymbolCoder:
             return words
     
     
-    def beam_decode(self, logits, batch_num, beam_width = 5) -> list[str]:
+    def beam_decode(self, logits: torch.Tensor, batch_num: int, beam_width: int = 5) -> list[str]:
+        """
+        This method apply Beam Decoding Algorithm for model output
+
+        Args:
+            logits (torch.Tensor): Model output with log_softmax
+            batch_num (int): Number of images in batch
+            beam_width (int, optional): Beam width in algorithm. Defaults to 5.
+
+        Returns:
+            list[str]: Decoded phrases
+        """
         predictions = []
         for i in range(batch_num):
             word = torch.nn.functional.softmax(logits[:, i, :], dim = 1)
