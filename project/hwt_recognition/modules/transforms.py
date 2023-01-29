@@ -2,6 +2,9 @@ from omegaconf import OmegaConf
 from torchvision import transforms
 
 class Transforms(transforms.Compose):
+    """
+    This class implements transforms
+    """
     
     def __init__(self, args) -> None:
         

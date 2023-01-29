@@ -7,10 +7,12 @@ class Tokenizer:
     """
     Class needs to encode initial phrases to Tensor
     and decode predicted labels to phrases
+    
+    Args:
+        alphabet (Iterable[str]): Alphabet of your data
     """
     
     def __init__(self, alphabet: Iterable[str]) -> None:
-        
         self.alphabet = ''.join(sorted(alphabet))
         self.sym2class, self.class2sym = {'' : 0}, {0 : ''}
         
@@ -77,7 +79,7 @@ class Tokenizer:
             return words
     
     
-    def beam_decode(self, logits: torch.Tensor, batch_num: int, beam_width: int = 5) -> list[str]:
+    def beam_decode(self, logits: torch.Tensor, batch_num: int, beam_width: int = 5) -> Union[str, list[str]]:
         """
         This method apply Beam Decoding Algorithm for model output
 
@@ -87,7 +89,7 @@ class Tokenizer:
             beam_width (int, optional): Beam width in algorithm. Defaults to 5.
 
         Returns:
-            list[str]: Decoded phrases
+            Union[str, list[str]]: List of decoded phrase (or one str phrase)
         """
         predictions = []
         for i in range(batch_num):
@@ -95,7 +97,7 @@ class Tokenizer:
             word = torch.hstack((word, word[:, 0].unsqueeze(1)))[:, 1:].cpu().numpy()
             res = beam_search(word, self.alphabet, beam_width) # Over 10 is too slow
             predictions.append(res)
-        return predictions
+        return predictions if len(predictions) > 1 else predictions[0]
     
     
     def __len__(self):

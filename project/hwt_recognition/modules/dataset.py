@@ -3,6 +3,7 @@ import torch
 import pandas as pd
 
 from PIL import Image
+from typing import Optional
 from torchvision import transforms
 from torch.utils.data import Dataset
 
@@ -11,7 +12,9 @@ class HWTDataset(Dataset):
     Class for creating custom image2label dataset from folder
 
     Args:
-        Dataset (Dataset): Standart torch class for custom datasets
+        root_dir (str): Path to image dir
+        label_dir (str): Path to labling file
+        transforms (Optional[transforms.Compose], optional): Transforms you want to apply. Defaults to None.
     """
     
     
@@ -19,7 +22,7 @@ class HWTDataset(Dataset):
         self,
         root_dir: str,
         label_dir: str,
-        transforms: transforms.Compose = None
+        transforms: Optional[transforms.Compose] = None
     ) -> None:
         super(HWTDataset, self).__init__()
         

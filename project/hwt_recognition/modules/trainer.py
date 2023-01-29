@@ -1,39 +1,57 @@
 import wandb
 import torch
 
-from model import Model
+from .model import Model
+from .tokenizer import Tokenizer
 
-from torch import Tensor
+from torch import nn
 from tabulate import tabulate
 from tqdm.notebook import tqdm
+from typing import Iterable, Optional, List, Tuple
 from torchmetrics import CharErrorRate, WordErrorRate
 
 class Trainer:
+    """
+    Class for training models
+
+    Args:
+        model (nn.Module): _description_
+        optimizer (torch.optim.Optimizer): _description_
+        dataloader (torch.utils.data.Dataloader): _description_
+        lossfunc (nn.Module): _description_
+        tokenizer (Tokenizer): _description_
+        epochs (int): _description_
+        model_name (str): _description_
+        train_alphabet (Iterable[str]): _description_
+        scheduler (Optional[torch.optim.lr_scheduler._LRScheduler], optional): _description_. Defaults to None.
+        logging (Optional[bool], optional): _description_. Defaults to False.
+        device (Optional[str], optional): _description_. Defaults to 'cuda'.
+    """
     
     def __init__(
         self,
-        model,
-        optimizer,
-        dataloader,
-        lossfunc,
-        coder,
-        epochs,
-        model_name,
-        train_alphabet,
-        scheduler = None,
-        logging : bool = False,
-        device : str = 'cuda'
+        model: nn.Module,
+        optimizer: torch.optim.Optimizer,
+        dataloader: torch.utils.data.Dataloader,
+        lossfunc: nn.Module,
+        tokenizer: Tokenizer,
+        epochs: int,
+        model_name: str,
+        train_alphabet: Iterable[str],
+        scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+        logging: Optional[bool] = False,
+        device: Optional[str] = 'cuda'
     ) -> None:
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.dataloader = dataloader
         self.lossfunc = lossfunc
-        self.coder = coder
+        self.tokenizer = tokenizer
         self.epochs = epochs
         self.model_name = model_name
-        self.LOGGING = logging
-        self.DEVICE = device
+        self.logging = logging
+        self.device = torch.device(device)
         self.train_alphabet = train_alphabet
 
 
@@ -43,17 +61,30 @@ class Trainer:
         mean_loss: float,
         char_error: float,
         word_error: float,
-        zero_out_losses: float
     ) -> None:
+        """
+        This method prints epoch stat
+
+        Args:
+            epoch (int): Epoch number
+            mean_loss (float): Mean loss
+            char_error (float): CER
+            word_error (float): WER
+        """
         print(tabulate(
-            [['epoch', 'mean loss', 'mean cer', 'mean wer', 'zero loss warnings'],
-             [epoch, round(mean_loss, 4), round(char_error, 4),
-              round(word_error, 4), zero_out_losses]],
+            [['epoch', 'mean loss', 'mean cer', 'mean wer'],
+             [epoch, round(mean_loss, 4), round(char_error, 4), round(word_error, 4)]],
             headers='firstrow',
             tablefmt='fancy_grid'))
 
 
     def save_model(self, mean_loss: float, char_error: float) -> None:
+        """
+        This method saves model
+        Args:
+            mean_loss (float): Mean loss
+            char_error (float): CER
+        """
         torch.save(self.model.state_dict(),
                     f'./{self.model_name} \
                     _L-{round(mean_loss, 4)} \
@@ -61,6 +92,14 @@ class Trainer:
 
 
     def log(self, mean_loss: float, char_error: float, word_error: float) -> None:
+        """
+        This method logs stat in WandB
+
+        Args:
+            mean_loss (float): Mean loss
+            char_error (float): CER
+            word_error (float): WER
+        """
         wandb.log({'loss': mean_loss,
                     'CER': char_error,
                     'WER': word_error,
@@ -70,78 +109,134 @@ class Trainer:
                         else self.optimizer.param_groups[0]['lr']})
     
     
-    def print_save_stat(self, outputs: list, epoch: int, zero_out: int) -> None:
-        
-        assert len(outputs) != 0, 'Error: bad loss'
-            
+    def print_save_stat(
+        self, 
+        outputs: List[List[float], List[float], List[float]],
+        epoch: int
+    ) -> None:
+        """
+        This method helps to log and save model
+
+        Args:
+            outputs (List[List[float], List[float], List[float]]): 
+                The first list is list with losses, the second is CER, the third is WER by epoch
+            epoch (int): Number of epoch
+        """
         output = torch.Tensor(outputs)
         mean_loss = output[:, 0].mean().item()
         char_error = output[:, 1].mean().item()
         word_error = output[:, 2].mean().item()
         
-        self.print_epoch_data(epoch, mean_loss, char_error, word_error, zero_out)
+        self.print_epoch_data(epoch, mean_loss, char_error, word_error)
         
-        if self.LOGGING:
+        if self.logging:
             self.log(mean_loss, char_error, word_error)
         
         if mean_loss < 0.1 or not (epoch + 1) % 5:
             self.save_model(mean_loss, char_error)
     
-    def forward(self, data: torch.Tensor, targets: Tensor) -> None:
+    def forward(
+        self, data: torch.Tensor, targets: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Forward pass of the model
+
+        Args:
+            data (torch.Tensor): Input of model
+            targets (torch.Tensor): True labels
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor, torch.Tensor]: 
+                Loss val, log_softmax probs, sequence length for every img in batch
+        """
         self.optimizer.zero_grad()
-        classes, lengths = self.coder.encode(targets)
-        data = data.to(self.DEVICE)
-        classes = classes.to(self.DEVICE)
+        classes, lengths = self.tokenizer.encode(targets)
+        data = data.to(self.device)
+        classes = classes.to(self.device)
         
         logits = self.model(data)
         logits = logits.contiguous().cpu()
-        T, N, C = logits.size()
-        pred_sizes = torch.LongTensor([T for i in range(N)]).to(self.DEVICE)
+        L, N, H_out = logits.size() # L - seq length, N - batch size, H_out - len alphabet
+        pred_sizes = torch.LongTensor([L for i in range(N)]).to(self.device)
         classes = classes.view(-1).contiguous()
         loss = self.lossfunc(logits, classes, pred_sizes, lengths)
+        
+        return loss, logits, pred_sizes
     
     
-    def prediction(self, logits: Tensor, pred_sizes: Tensor) -> list[str]:
+    def decode(self, logits: torch.Tensor, pred_sizes: torch.Tensor) -> List[str]:
+        """
+        This method decode predicted probs to phrases
+
+        Args:
+            logits (torch.Tensor): Model output
+            pred_sizes (torch.Tensor): Sequence length for every img in batch
+
+        Returns:
+            list[str]: Decoded phrases
+        """
         probs, preds = logits.max(2)
         preds = preds.transpose(1, 0).contiguous().view(-1)
-        sim_preds = self.coder.decode(preds.data, pred_sizes.data)
+        sim_preds = self.tokenizer.decode(preds.data, pred_sizes.data)
         return sim_preds
 
 
-    def backward(self, loss: Tensor, sim_preds: list, targets: list) -> tuple[float, float]:
-        CER = CharErrorRate()
-        WER = WordErrorRate()
-        cer = CER(sim_preds, targets)
-        wer = WER(sim_preds, targets)
-        
+    def backward(self, loss: torch.Tensor) -> None:
+        """
+        Backward pass of the model
+
+        Args:
+            loss (torch.Tensor): Loss value
+        """
         loss.backward()
         self.optimizer.step()
         if self.scheduler:
             self.scheduler.step()
         
-        return cer, wer
     
-    
-    def statistics(self, loss: Tensor, cer: float, wer: float) -> list[float, float, float]:
+    def statistics(
+        self, loss: torch.Tensor, sim_preds: List[str], targets: List[str]
+    ) -> List[float, float, float]:
+        """
+        Calculate stat of batch
+
+        Args:
+            loss (torch.Tensor): Loss value
+            sim_preds (List[str]): Predicted phrases
+            targets (List[str]): True phrases
+
+        Returns:
+            list[float, float, float]: loss, CER, WER
+        """
+        CER = CharErrorRate()
+        WER = WordErrorRate()
+        cer = CER(sim_preds, targets)
+        wer = WER(sim_preds, targets)
+        
         return [abs(loss.item()), cer, wer]
     
     
-    def train(self) -> Model:
+    def train(self) -> torch.Module:
+        """
+        This method run training
+
+        Returns:
+            torch.Module: Trained model
+        """
         self.model.train()
         
-        if self.LOGGING:
+        if self.logging:
             wandb.watch(self.model, self.lossfunc, log='all', log_freq=100)
         
         for epoch in tqdm(range(self.epochs), total=self.epochs):
-            zero_out_losses = 0
             outputs = []
             for (data, targets) in tqdm(self.dataloader, total=len(self.dataloader)):
                 
                 loss, logits, pred_sizes = self.forward(data, targets)
-                sim_preds = self.prediction(logits, pred_sizes)
-                cer, wer = self.backward(loss, sim_preds, targets)
-                outputs.append(self.statistics(loss, cer, wer))
+                sim_preds = self.decode(logits, pred_sizes)
+                self.backward(loss)
+                outputs.append(self.statistics(loss, sim_preds, targets))
             
-            self.print_save_stat(outputs, epoch, zero_out_losses)
+            self.print_save_stat(outputs, epoch)
         
         return self.model

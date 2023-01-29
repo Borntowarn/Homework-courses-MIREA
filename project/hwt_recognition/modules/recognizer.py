@@ -1,39 +1,88 @@
 import PIL
 import torch
 
+from .tokenizer import Tokenizer
+from .corrector import Corrector
+
 from tkinter import *
 from PIL import ImageDraw
-from evaluator import Evaluator
-from transforms import Transforms
+from typing import Optional
+from torchvision import transforms
 
 class Recognizer:
     """
-    This class can recognize phrase from painted or given picture
+    Class for 
+
+    Args:
+        model (torch.Module): Model for recognizing
+        tokenizer (Tokenizer): Tokenizer that is used in model
+        transform (transforms.Compose): Test transforms to transform recognized image
+        device (str, optional): Device to run model. Defaults to 'cuda'.
     """
+    corrector: Corrector = Corrector()
     
-    #model: Model
-    device: torch.device
-    
-    def __init__(self,
-                 model,
-                 coder,
-                 transform: Transforms,
-                 device: str = 'cuda'
-                 ) -> None:
+    def __init__(
+        self,
+        model: torch.Module,
+        tokenizer: Tokenizer,
+        transform: transforms.Compose,
+        device: Optional[str] = 'cuda'
+    ) -> None:
         self.model = model.eval()
         self.transform = transform
-        self.device = device
-        self.coder = coder
+        self.tokenizer = tokenizer
+        self.device = torch.device(device)
     
     
-    def forward(self, img: Image, beam_width: int) -> str:
+    def recognize_from_painted(self, beam_width: int = 0) -> str:
+        """
+        This method allows you to paint phrase to recognize
+        
+        Args:
+            beam_width (int): If > 0 beam decoding will be appplied. Default 5.
+
+        Returns:
+            str: Recognized phrase
+        """
+        self._paint()
+        prediction = self.forward(self.img, beam_width)
+        return prediction
+
+    
+    def recognize_from_file(
+        self, 
+        path: str, 
+        beam_width: Optional[int] = 0,
+        correcting: Optional[bool] = False
+    ) -> str:
+        """
+        This method loads img from given then recognize it
+
+        Args:
+            path (str): Path to img
+            beam_width (Optional[int], optional): If > 0 beam decoding will be appplied. Default 5.
+            correcting (Optional[bool], optional): If you want to correct predicted word with dictionary.
+            Defaults to False.
+
+        Returns:
+            str: Recognized phrase
+        """
+        img = PIL.Image.open(path)
+        prediction = self.forward(img, beam_width)
+        
+        if correcting: 
+            prediction = self.corrector.word_correction([prediction])[0]
+            
+        return prediction
+    
+    
+    def _forward(self, img: PIL.Image, beam_width: int) -> str:
         """
         This method implements forward pass of the model
 
         Args:
-            img (Image): Given image to recognize.
+            img (PIL.Image): Given image to recognize.
             beam_width (int): If > 0 beam decoding will be appplied
-            If Image then transforms must be True. Else it's assumed transforms have already been applied
 
         Returns:
             str: Recognized phrase
@@ -42,25 +91,25 @@ class Recognizer:
 
         logits = self.model(img.to(self.device))
         logits = logits.contiguous().cpu()
-        T, B, H = logits.size()
-        pred_sizes = torch.LongTensor([T])
-        probs, pos = logits.max(2)
-        pos = pos.transpose(1, 0).contiguous().view(-1)
-        if beam_width:
-            prediction = self.coder.beam_decode(logits, B, beam_width)
-        else:
-            prediction = self.coder.decode(pos.data, pred_sizes.data)
+        L, N, H_out = logits.size() # L - seq length, N - batch size, H_out - len alphabet
         
-        return prediction[0]
+        if beam_width:
+            prediction = self.tokenizer.beam_decode(logits, N, beam_width)
+        else:
+            pred_sizes = torch.LongTensor([L])
+            probs, pos = logits.max(2)
+            pos = pos.transpose(1, 0).contiguous().view(-1)
+            prediction = self.tokenizer.decode(pos.data, pred_sizes.data)
+        
+        return prediction
     
     
-    def paint(self) -> None:
+    def _paint(self) -> None:
         """
         This method creates a window to paint a phrase
         """
         width = 1000  # canvas width
         height = 400 # canvas height
-        center = height//2
         white = (255, 255, 255) # canvas back
         
         self.master = Tk()
@@ -73,7 +122,7 @@ class Recognizer:
         self.img = PIL.Image.new("RGB", (width, height), white)
         self.draw = ImageDraw.Draw(self.img)
         self.canvas.pack(expand=YES, fill=BOTH)
-        self.canvas.bind("<B1-Motion>", self.draw_img)
+        self.canvas.bind("<B1-Motion>", self._draw_img)
 
         # Button to recognize img and close pint window
         button=Button(text="Recognize",command=self.master.destroy)
@@ -82,46 +131,8 @@ class Recognizer:
         self.master.mainloop()
     
 
-    def draw_img(self, event) -> None:
+    def _draw_img(self, event) -> None:
         x1, y1 = (event.x - 1), (event.y - 1)
         x2, y2 = (event.x + 1), (event.y + 1)
         self.canvas.create_oval(x1, y1, x2, y2, fill="black",width=5)
         self.draw.line([x1, y1, x2, y2],fill="black",width=5)
-
-
-    def recognize_from_painted(self, beam_width: int = 0) -> str:
-        """
-        This method allows you to paint phrase to recognize
-        
-        Args:
-            beam_width (int): If > 0 beam decoding will be appplied. Default 5.
-
-        Returns:
-            str: Recognized phrase
-        """
-        self.paint()
-        prediction = self.forward(self.img, beam_width)
-        return prediction
-
-    
-    def recognize_from_file(self, path, beam_width: int = 0, correcting = False) -> str:
-        """
-        This method loads img from given then recognize it
-
-        Args:
-            path (str): Path to img
-            beam_width (int): If > 0 beam decoding will be appplied. Default 5.
-            correcting (bool, optional): If you want to correct predicted word with dictionary.
-            Defaults to False.
-
-        Returns:
-            str: Recognized phrase
-        """
-        img = PIL.Image.open(path)
-        prediction = self.forward(img, beam_width)
-        
-        if correcting: 
-            evaluator = Evaluator(self.model, None, self.coder)
-            prediction = evaluator.word_correction([prediction])[0]
-            
-        return prediction

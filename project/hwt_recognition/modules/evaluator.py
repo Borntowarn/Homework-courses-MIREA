@@ -1,16 +1,25 @@
 import torch
-import enchant
 
-from modules.tokenizer import Tokenizer
-from typing import Dict, List, Tuple, Optional
+from .corrector import Corrector
+from .tokenizer import Tokenizer
+
 from tqdm.notebook import tqdm
+from typing import Dict, List, Tuple, Optional
 from torchmetrics import CharErrorRate, WordErrorRate
 
 class Evaluator:
     """
     Class for evaluate CER, WER of model and
     count stat about symbols errors.
+
+    Args:
+        model (torch.Module): Model for evaluating
+        loader (torch.utils.data.Dataloader): Loader for your test data
+        tokenizer (Tokenizer): Tokenizer of model
+        device (Optional[str], optional): Defaults to 'cuda'.
     """
+    corrector: Corrector = Corrector()
+    
     
     def __init__(
         self, 
@@ -20,16 +29,21 @@ class Evaluator:
         device: Optional[str] = 'cuda'
     ) -> None:
         self.model = model.eval()
-        self.CER = CharErrorRate()
-        self.WER = WordErrorRate()
         self.tokenizer = tokenizer
         self.loader = loader
-        self.device = device
-        self.avg_matches = 0
+        self.device = torch.device(device)
         
+        self.CER = CharErrorRate()
+        self.WER = WordErrorRate()
+        
+        # Predictions without any correcting.
+        # Its saved after the first evaluate run 
         self.original_pred = []
         self.original_labels = []
         
+        # In order not to count stat every time
+        # we just save it to this dict
+        self.avg_matches = 0
         self.symbol_err = {}
         self.length_word_CER = {}
     
@@ -44,7 +58,7 @@ class Evaluator:
 
         Args:
             beam_width (Optional[int]): If you want to use Beam Search Decoding Algorithm set it to 0.
-            Defaults to 0.
+                Defaults to 0.
             correcting (Optional[bool]): If you want to use correcting by dict. Defaults to False.
 
         Returns:
@@ -52,10 +66,10 @@ class Evaluator:
         """
         
         predictions, labels = self._forward(beam_width)
-        
+
         # Correct predictions if wants
         if correcting: 
-            predictions = self._word_correction(predictions)
+            predictions = self.corrector.word_correction(predictions)
         
         # Count CER, WER
         char_error = self.CER(predictions, labels)
@@ -95,70 +109,6 @@ class Evaluator:
                 }
         
         return self.symbol_err.copy(), self.length_word_CER.copy()
-
-    
-    def _word_correction(self, predictions: List[str]) -> List[str]:
-        """
-        This method correct predicted phrases using suggest method
-
-        Args:
-            predictions (list[str]): Initial decoded predicted phrases
-
-        Returns:
-            List[str]: Corrected phrases
-        """
-        correct_predictions = []
-        dictionary = enchant.Dict("ru_RU")
-        
-        # Every pred phrase is splitted by words
-        # then every word is checked with external dict
-        for phrase in tqdm(predictions, total=len(predictions)):
-            words = phrase.split()
-            result = self.suggest(words, dictionary)
-            correct_predictions.append(result)
-            
-        return correct_predictions
-    
-    
-    def _suggest(self, words: List[str], dictionary: enchant.Dict) -> str:
-        """
-        This method suggest a word based on external dictionary
-
-        Args:
-            words (List[str]): Words in phrase
-            dictionary (enchant.Dict): External dictionary provided by enchant module
-
-        Returns:
-            str: Final phrase
-        """
-        result = ''
-        
-        for word in words:
-            if word.isalpha():
-                
-                # If word is in dict probably it's without errors
-                cer_suggest = dict()
-                if dictionary.check(word):
-                    result += word + ' '
-                    continue
-                
-                # Else dict can suggest what word we need
-                suggestions = set(dictionary.suggest(word))
-
-                # For every suggestion finding CER
-                for suggest in suggestions:
-                    if ' ' not in suggest:
-                        cer = self.CER(suggest, word)
-                        cer_suggest[cer] = suggest
-                
-                # Get the nearest word
-                if len(cer_suggest.keys()) > 0: 
-                    result += cer_suggest[min(cer_suggest.keys())] + ' '
-                # Or take original word if there's no suggestions
-                else:
-                    result += word + ' '
-                    
-        return result[:-1]
     
     
     def _collect_statistics(self) -> None:
@@ -212,14 +162,14 @@ class Evaluator:
             labels.extend(targets)
             
             logits = self.model(data).contiguous().detach()
-            T, B, H = logits.size()
-            pred_sizes = torch.LongTensor([T for i in range(B)])
-            probs, pos = logits.max(2)
-            pos = pos.transpose(1, 0).contiguous().view(-1)
+            L, N, H_out = logits.size() # L - seq length, N - batch size, H_out - len alphabet
             
             if beam_width:
-                sim_preds = self.tokenizer.beam_decode(logits, B, beam_width)
+                sim_preds = self.tokenizer.beam_decode(logits, N, beam_width)
             else:
+                pred_sizes = torch.LongTensor([L for i in range(N)])
+                probs, pos = logits.max(2)
+                pos = pos.transpose(1, 0).contiguous().view(-1)
                 sim_preds = self.tokenizer.decode(pos.data, pred_sizes.data)
                 
             predictions.extend(sim_preds)
