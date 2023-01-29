@@ -1,7 +1,7 @@
-from .modules.Model import Model
-from .modules.Decoder import SymbolCoder
-from .modules.Transforms import Transforms
-from .modules.Recognizer import Recognizer
+from .modules.model import Model
+from .modules.tokenizer import Tokenizer
+from .modules.transforms import Transforms
+from .modules.recognizer import Recognizer
 from .utils import load_config, init_wandb, load_data
 
 from pytorch_lightning import seed_everything
@@ -19,7 +19,7 @@ def run() -> None:
     
     model = Model(**cfg.model.params)
     model = model.to(cfg.device)
-    coder = SymbolCoder(alphabet)
+    coder = Tokenizer(alphabet)
     
     recognizer = Recognizer(model, coder, Transforms(cfg.transforms.params), cfg.device)
     recognizer.recognize_from_painted()

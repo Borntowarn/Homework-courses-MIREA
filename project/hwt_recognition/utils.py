@@ -1,13 +1,14 @@
 import wandb
 import pandas as pd
 
-from .modules.Dataset import HWTDataset
-from .modules.Transforms import Transforms
+from .modules.dataset import HWTDataset
+from .modules.transforms import Transforms
 
 from omegaconf import open_dict
+from omegaconf import DictConfig
 from hydra import initialize, compose
 from torch.utils.data import DataLoader
-from omegaconf import DictConfig
+
 
 
 def load_config(conf_path: str, conf_name: str) -> DictConfig:

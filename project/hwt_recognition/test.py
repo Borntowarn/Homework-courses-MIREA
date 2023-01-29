@@ -1,8 +1,8 @@
 import torch
 
-from .modules.Model import Model
-from .modules.Decoder import SymbolCoder
-from .modules.Evaluator import Evaluator
+from .modules.model import Model
+from .modules.tokenizer import Tokenizer
+from .modules.evaluator import Evaluator
 from .utils import load_config, load_data
 
 from pytorch_lightning import seed_everything
@@ -19,7 +19,7 @@ def run(path) -> None:
     model = Model(**cfg.model.params)
     model.load_state_dict(torch.load(path))
     model = model.to(cfg.device)
-    coder = SymbolCoder(alphabet)
+    coder = Tokenizer(alphabet)
 
     evaluator = Evaluator(model, test_dataloader, coder, cfg.device)
     evaluator.evaluate(correcting=True)

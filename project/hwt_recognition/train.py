@@ -1,8 +1,8 @@
 import torch
 
-from .modules.Model import Model
-from .modules.Trainer import Trainer
-from .modules.Decoder import SymbolCoder
+from .modules.model import Model
+from .modules.trainer import Trainer
+from .modules.tokenizer import Tokenizer
 from .utils import load_config, init_wandb, load_data
 
 from pytorch_lightning import seed_everything
@@ -21,7 +21,7 @@ def run() -> None:
     # Init every class for training
     model = Model(**cfg.model.params)
     model = model.to(cfg.device)
-    coder = SymbolCoder(alphabet)
+    coder = Tokenizer(alphabet)
     ctc_loss = torch.nn.CTCLoss(reduction='mean', zero_infinity=True)
     optimizer = getattr(torch.optim, cfg.optim.optim)(model.parameters(), **cfg.optim.params)
     
