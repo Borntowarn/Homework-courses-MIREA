@@ -3,17 +3,19 @@ name: Experiment 1
 logging: False # if False wandb will not log
 id_resume: null # if not none wandb will continue log for this id run
 
-transforms: t1 # File of transfroms config
-model: m1 # File of model config
-scheduler: s2 # File of scheduler config or null for no scheduler
-optim: o1 # File of optim config
+defaults:
+  - transforms: t1 # File of transfroms config
+  - model: m1 # File of model config
+  - scheduler: s1 # File of scheduler config or null for no scheduler
+  - optim: o1 # File of optim config
+  - _self_
 
 train: # Train dirs
-  dir: ./dataset/train/
-  labels: ./dataset/train.tsv
+  dir: datasets/dataset/train/
+  labels: datasets/dataset/train.tsv
 test: # Test dirs
-  dir: ./dataset/test/
-  labels: ./dataset/test.tsv
+  dir: datasets/dataset/test/
+  labels: datasets/dataset/test.tsv
 
 epochs: 20
 train_batch: 8 # Если ставить батч 16, то лосс не падает

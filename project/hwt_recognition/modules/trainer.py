@@ -1,7 +1,6 @@
 import wandb
 import torch
 
-from .model import Model
 from .tokenizer import Tokenizer
 
 from torch import nn
@@ -32,7 +31,7 @@ class Trainer:
         self,
         model: nn.Module,
         optimizer: torch.optim.Optimizer,
-        dataloader: torch.utils.data.Dataloader,
+        dataloader: torch.utils.data.DataLoader,
         lossfunc: nn.Module,
         tokenizer: Tokenizer,
         epochs: int,
@@ -111,14 +110,14 @@ class Trainer:
     
     def print_save_stat(
         self, 
-        outputs: List[List[float], List[float], List[float]],
+        outputs: List[List[float]],
         epoch: int
     ) -> None:
         """
         This method helps to log and save model
 
         Args:
-            outputs (List[List[float], List[float], List[float]]): 
+            outputs (List[List[float]]): 
                 The first list is list with losses, the second is CER, the third is WER by epoch
             epoch (int): Number of epoch
         """
@@ -132,7 +131,9 @@ class Trainer:
         if self.logging:
             self.log(mean_loss, char_error, word_error)
         
-        if mean_loss < 0.1 or not (epoch + 1) % 5:
+        if mean_loss < 0.1 \
+           or not (epoch + 1) % 5 \
+           or epoch == self.epochs:
             self.save_model(mean_loss, char_error)
     
     def forward(
@@ -194,9 +195,7 @@ class Trainer:
             self.scheduler.step()
         
     
-    def statistics(
-        self, loss: torch.Tensor, sim_preds: List[str], targets: List[str]
-    ) -> List[float, float, float]:
+    def statistics(self, loss: torch.Tensor, sim_preds: List[str], targets: List[str]) -> List[float]:
         """
         Calculate stat of batch
 
@@ -206,7 +205,7 @@ class Trainer:
             targets (List[str]): True phrases
 
         Returns:
-            list[float, float, float]: loss, CER, WER
+            list[float]: loss, CER, WER
         """
         CER = CharErrorRate()
         WER = WordErrorRate()
@@ -216,7 +215,7 @@ class Trainer:
         return [abs(loss.item()), cer, wer]
     
     
-    def train(self) -> torch.Module:
+    def train(self) -> nn.Module:
         """
         This method run training
 
@@ -228,7 +227,7 @@ class Trainer:
         if self.logging:
             wandb.watch(self.model, self.lossfunc, log='all', log_freq=100)
         
-        for epoch in tqdm(range(self.epochs), total=self.epochs):
+        for epoch in tqdm(range(1, self.epochs + 1), total=self.epochs):
             outputs = []
             for (data, targets) in tqdm(self.dataloader, total=len(self.dataloader)):
                 

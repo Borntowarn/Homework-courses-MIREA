@@ -1,4 +1,4 @@
 name: O1
-optim: Adam
 params:
+  _target_: torch.optim.Adam
   lr: 0.0003

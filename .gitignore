@@ -11,6 +11,9 @@ datasets/*
 # WANDB
 wandb
 
+# Hydra
+outputs
+
 # Trained models
 models
 

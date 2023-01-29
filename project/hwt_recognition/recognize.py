@@ -1,9 +1,12 @@
-from .modules.model import Model
-from .modules.tokenizer import Tokenizer
-from .modules.transforms import Transforms
-from .modules.recognizer import Recognizer
-from .utils import load_config, init_wandb, load_data
+import hydra
 
+from modules.model import Model
+from modules.tokenizer import Tokenizer
+from modules.transforms import Transforms
+from modules.recognizer import Recognizer
+from utils import modify_config, init_wandb, load_data
+
+from omegaconf import DictConfig
 from pytorch_lightning import seed_everything
 
 
@@ -12,8 +15,9 @@ CONFIG_PATH = './config'
 CONFIG_NAME = 'config'
 
 
-def run() -> None:
-    cfg = load_config() # Loading config
+@hydra.main(version_base=None, config_path="config", config_name="config")
+def run(cfg: DictConfig) -> None:
+    cfg = modify_config(cfg) # Changing config
     init_wandb(cfg) # Init WandB
     train_dataloader, test_dataloader, alphabet = load_data(cfg) # Init loaders
     

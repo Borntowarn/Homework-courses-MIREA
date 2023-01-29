@@ -1,5 +1,5 @@
 name: S1
-scheduler: StepLR
 params:
+  _target_: torch.optim.lr_scheduler.StepLR
   step_size: 8 # epochs for one step
   gamma: 0.1

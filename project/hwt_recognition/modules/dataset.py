@@ -25,7 +25,7 @@ class HWTDataset(Dataset):
         transforms: Optional[transforms.Compose] = None
     ) -> None:
         super(HWTDataset, self).__init__()
-        
+
         # Loading labling file
         name_label = pd.read_csv(label_dir, delimiter='\t', names = ['Image name', 'Label'])
         name_label['Image name'] = name_label['Image name'].apply(lambda x: os.path.join(root_dir, x))

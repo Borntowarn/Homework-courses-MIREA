@@ -173,6 +173,8 @@ class Model(nn.Module):
             stride = (stride, stride)
         if isinstance(pad, int):
             pad = (pad, pad)
+        if isinstance(dilation, int):
+            dilation = (dilation, dilation)
             
         h = floor(((shape[0] + (2 * pad[0]) - (dilation[0] * (kernel_size[0] - 1)) - 1) / stride[0]) + 1)
         w = floor(((shape[1] + (2 * pad[1]) - (dilation[1] * (kernel_size[1] - 1)) - 1) / stride[1]) + 1)

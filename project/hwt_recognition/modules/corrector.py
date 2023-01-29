@@ -1,7 +1,7 @@
 import enchant
 
 from typing import List
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 from torchmetrics import CharErrorRate
 
 class Corrector:
