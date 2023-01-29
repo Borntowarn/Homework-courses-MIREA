@@ -1,7 +1,7 @@
 import wandb
 import torch
 
-from .Model import Model
+from model import Model
 
 from torch import Tensor
 from tabulate import tabulate

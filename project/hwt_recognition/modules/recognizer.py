@@ -3,8 +3,8 @@ import torch
 
 from tkinter import *
 from PIL import ImageDraw
-from Evaluator import Evaluator
-from Transforms import Transforms
+from evaluator import Evaluator
+from transforms import Transforms
 
 class Recognizer:
     """
