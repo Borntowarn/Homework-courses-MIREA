@@ -58,7 +58,7 @@ class Evaluator:
         This method evaluates model by CER and WER
 
         Args:
-            beam_width (Optional[int]): If you want to use Beam Search Decoding Algorithm set it to 0.
+            beam_width (Optional[int]): If you don't want to use Beam Search Decoding Algorithm set it to 0.
                 Defaults to 0.
             correcting (Optional[bool]): If you want to use correcting by dict. Defaults to False.
 
@@ -68,7 +68,7 @@ class Evaluator:
         
         predictions, labels = self._forward(beam_width)
 
-        # Correct predictions if wants
+        # Correct predictions if want
         if correcting: 
             predictions = self.corrector.word_correction(predictions)
         
