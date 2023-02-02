@@ -1,0 +1,4 @@
+name: O2
+params:
+  _target_: torch.optim.Adam
+  lr: 0.00005

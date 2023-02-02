@@ -1,0 +1,5 @@
+name: S3
+scheduler: StepLR
+params:
+  step_size: 1 # epochs for one step
+  gamma: 0.8

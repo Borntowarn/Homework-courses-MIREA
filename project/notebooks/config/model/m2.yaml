@@ -1,0 +1,20 @@
+name: M2
+params:
+  len_alphabet: 93
+  num_layers: 7 # Numerate starts from 1
+
+  increase_channels_layers: [1, 2, 4] # after 1, 2, 4 layers channels mult by 2
+  modules_seq: CBAM # Conv, Act, MaxPool, BatchNorm
+  modules_freq: [1, 1, 1, 2] # CBA every 1 layer, M every 2 layers
+
+  conv_kernel_size: 3
+  conv_stride: 1
+  conv_padding: 1
+
+  pool_kernel_size: 2
+  pool_stride: 2
+  pool_padding: 0
+
+  activation: LeakyReLU
+
+  rnn_type: LSTM
