@@ -52,9 +52,35 @@ class Trainer:
         self.logging = logging
         self.device = torch.device(device)
         self.train_alphabet = train_alphabet
+    
+    
+    def train(self) -> nn.Module:
+        """
+        This method run training
 
+        Returns:
+            torch.Module: Trained model
+        """
+        self.model.train()
+        
+        if self.logging:
+            wandb.watch(self.model, self.lossfunc, log='all', log_freq=100)
+        
+        for epoch in tqdm(range(1, self.epochs + 1), total=self.epochs):
+            outputs = []
+            for (data, targets) in tqdm(self.dataloader, total=len(self.dataloader)):
+                
+                loss, logits, pred_sizes = self._forward(data, targets)
+                sim_preds = self._decode(logits, pred_sizes)
+                self._backward(loss)
+                outputs.append(self._statistics(loss, sim_preds, targets))
+            
+            self._print_save_stat(outputs, epoch)
+        
+        return self.model
 
-    def print_epoch_data(
+    
+    def _print_epoch_data(
         self,
         epoch: int,
         mean_loss: float,
@@ -77,7 +103,7 @@ class Trainer:
             tablefmt='fancy_grid'))
 
 
-    def save_model(self, mean_loss: float, char_error: float) -> None:
+    def _save_model(self, mean_loss: float, char_error: float) -> None:
         """
         This method saves model
         Args:
@@ -90,7 +116,7 @@ class Trainer:
                     _CER-{round(char_error, 4)}.pth')
 
 
-    def log(self, mean_loss: float, char_error: float, word_error: float) -> None:
+    def _log(self, mean_loss: float, char_error: float, word_error: float) -> None:
         """
         This method logs stat in WandB
 
@@ -108,7 +134,7 @@ class Trainer:
                         else self.optimizer.param_groups[0]['lr']})
     
     
-    def print_save_stat(
+    def _print_save_stat(
         self, 
         outputs: List[List[float]],
         epoch: int
@@ -126,17 +152,17 @@ class Trainer:
         char_error = output[:, 1].mean().item()
         word_error = output[:, 2].mean().item()
         
-        self.print_epoch_data(epoch, mean_loss, char_error, word_error)
+        self._print_epoch_data(epoch, mean_loss, char_error, word_error)
         
         if self.logging:
-            self.log(mean_loss, char_error, word_error)
+            self._log(mean_loss, char_error, word_error)
         
         if mean_loss < 0.1 \
            or not (epoch + 1) % 5 \
            or epoch == self.epochs:
-            self.save_model(mean_loss, char_error)
+            self._save_model(mean_loss, char_error)
     
-    def forward(
+    def _forward(
         self, data: torch.Tensor, targets: torch.Tensor
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -165,7 +191,7 @@ class Trainer:
         return loss, logits, pred_sizes
     
     
-    def decode(self, logits: torch.Tensor, pred_sizes: torch.Tensor) -> List[str]:
+    def _decode(self, logits: torch.Tensor, pred_sizes: torch.Tensor) -> List[str]:
         """
         This method decode predicted probs to phrases
 
@@ -182,7 +208,7 @@ class Trainer:
         return sim_preds
 
 
-    def backward(self, loss: torch.Tensor) -> None:
+    def _backward(self, loss: torch.Tensor) -> None:
         """
         Backward pass of the model
 
@@ -195,7 +221,7 @@ class Trainer:
             self.scheduler.step()
         
     
-    def statistics(self, loss: torch.Tensor, sim_preds: List[str], targets: List[str]) -> List[float]:
+    def _statistics(self, loss: torch.Tensor, sim_preds: List[str], targets: List[str]) -> List[float]:
         """
         Calculate stat of batch
 
@@ -213,29 +239,3 @@ class Trainer:
         wer = WER(sim_preds, targets)
         
         return [abs(loss.item()), cer, wer]
-    
-    
-    def train(self) -> nn.Module:
-        """
-        This method run training
-
-        Returns:
-            torch.Module: Trained model
-        """
-        self.model.train()
-        
-        if self.logging:
-            wandb.watch(self.model, self.lossfunc, log='all', log_freq=100)
-        
-        for epoch in tqdm(range(1, self.epochs + 1), total=self.epochs):
-            outputs = []
-            for (data, targets) in tqdm(self.dataloader, total=len(self.dataloader)):
-                
-                loss, logits, pred_sizes = self.forward(data, targets)
-                sim_preds = self.decode(logits, pred_sizes)
-                self.backward(loss)
-                outputs.append(self.statistics(loss, sim_preds, targets))
-            
-            self.print_save_stat(outputs, epoch)
-        
-        return self.model

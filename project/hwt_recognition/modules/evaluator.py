@@ -3,6 +3,7 @@ import torch
 from .corrector import Corrector
 from .tokenizer import Tokenizer
 
+from torch import nn
 from tqdm.notebook import tqdm
 from typing import Dict, List, Tuple, Optional
 from torchmetrics import CharErrorRate, WordErrorRate
@@ -23,8 +24,8 @@ class Evaluator:
     
     def __init__(
         self, 
-        model: torch.Module, 
-        loader: torch.utils.data.Dataloader, 
+        model: nn.Module, 
+        loader: torch.utils.data.DataLoader, 
         tokenizer: Tokenizer, 
         device: Optional[str] = 'cuda'
     ) -> None:

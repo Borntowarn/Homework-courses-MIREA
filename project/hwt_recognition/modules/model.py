@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-from torch import Tensor
 from typing import Union, Optional
 
 
@@ -181,7 +180,7 @@ class Model(nn.Module):
         return (h, w)
     
     
-    def forward(self, data: torch.Tensor) -> Tensor:
+    def forward(self, data: torch.Tensor) -> torch.Tensor:
         
         for module in self.layers:
             data = module(data)

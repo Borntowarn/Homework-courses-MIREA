@@ -23,7 +23,7 @@ class Recognizer:
     
     def __init__(
         self,
-        model: torch.Module,
+        model: nn.Module,
         tokenizer: Tokenizer,
         transform: transforms.Compose,
         device: Optional[str] = 'cuda'

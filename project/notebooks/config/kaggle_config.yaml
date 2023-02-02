@@ -16,5 +16,6 @@ test: # Test dirs
   labels: ../input/hwt-russian-dataset/dataset/dataset/test.tsv
 
 epochs: 60
-batch: 128 # Если ставить батч 16, то лосс не падает
+train_batch: 128
+test_batch: 128
 device: cuda
