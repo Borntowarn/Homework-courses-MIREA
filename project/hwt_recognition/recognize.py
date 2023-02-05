@@ -1,4 +1,5 @@
 import hydra
+import torch
 
 from modules.model import Model
 from modules.tokenizer import Tokenizer
@@ -13,6 +14,7 @@ from pytorch_lightning import seed_everything
 seed_everything(0, True)
 CONFIG_PATH = './config'
 CONFIG_NAME = 'config'
+PATH_TO_MODEL = ''
 
 
 @hydra.main(version_base=None, config_path="config", config_name="config")
@@ -22,6 +24,7 @@ def run(cfg: DictConfig) -> None:
     train_dataloader, test_dataloader, alphabet = load_data(cfg) # Init loaders
     
     model = Model(**cfg.model.params)
+    model.load_state_dict(torch.load(PATH_TO_MODEL))
     model = model.to(cfg.device)
     coder = Tokenizer(alphabet)
     

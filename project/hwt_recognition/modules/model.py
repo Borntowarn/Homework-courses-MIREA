@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 
 from typing import Union, Optional
+from hydra.utils import instantiate
+from omegaconf import DictConfig
 
 
 class RNN(nn.Module):
@@ -25,21 +27,17 @@ class RNN(nn.Module):
         self,
         in_len: int,
         out_len: int,
+        cfg: DictConfig,
         n_classes: Optional[int] = None,
-        rnn_type: Optional[str] = 'RNN',
-        bidirectional: Optional[bool] = True,
-        batch_first: Optional[bool] = True
     ) -> None:
         super(RNN, self).__init__()
         self.n_classes = n_classes
         self.linear = None
         
-        self.rnn = getattr(nn, rnn_type)(in_len, out_len, 
-                          bidirectional = bidirectional, 
-                          batch_first = batch_first)
+        self.rnn = instantiate(cfg, in_len, out_len)
         
         if self.n_classes:
-            self.linear = nn.Linear(out_len * [1, 2][bidirectional], n_classes)
+            self.linear = nn.Linear(out_len * [1, 2][cfg.bidirectional], n_classes)
 
     
     def forward(self, data: torch.Tensor) -> torch.Tensor:        
@@ -103,7 +101,7 @@ class Model(nn.Module):
         pool_stride: Optional[Union[int, tuple]] = 2,
         pool_padding: Optional[Union[int, tuple]] = 0,
         activation: Optional[str] = 'ReLU',
-        rnn_type: Optional[str] = 'RNN'
+        rnn: Optional[str] = 'RNN'
     ) -> None:
         super(Model, self).__init__()
         self.layers = nn.ModuleList()
@@ -117,14 +115,14 @@ class Model(nn.Module):
         for layer in range(1, num_layers + 1):
             for module in modules_seq:
                 if layer % frequency[module]: # Check freq of module
-                    continue
+                    continue # pass module on this layer
                 if module == 'C':
                     self.layers.append(nn.Conv2d(in_channels, out_channels, conv_kernel_size,
                                                 conv_stride, conv_padding))
                     in_channels = out_channels
                     img_shape = self.conv_output_shape(img_shape, conv_kernel_size, conv_stride, conv_padding)
                 elif module == 'A':
-                    self.layers.append(getattr(nn, activation)())
+                    self.layers.append(instantiate(activation))
                 elif module == 'M':
                     self.layers.append(nn.MaxPool2d(pool_kernel_size, pool_stride, pool_padding))
                     img_shape = self.conv_output_shape(img_shape, pool_kernel_size, pool_stride, pool_padding)
@@ -136,8 +134,8 @@ class Model(nn.Module):
                 out_channels *= 2
         
         self.rnn_layers = nn.Sequential(
-            RNN(img_shape[0]*512, 512, rnn_type=rnn_type, bidirectional=True, batch_first=True),
-            RNN(1024, 128, len_alphabet + 1, rnn_type=rnn_type, bidirectional=True, batch_first=True)
+            RNN(img_shape[0]*512, 512, rnn),
+            RNN(1024, 128, rnn, len_alphabet + 1)
         )
         
         print(f'Shape after convs layers: {img_shape}')

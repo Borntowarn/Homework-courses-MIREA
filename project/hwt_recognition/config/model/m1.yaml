@@ -1,5 +1,6 @@
 name: M1
 params:
+  _target_: modules.model.Model
   len_alphabet: 93
   num_layers: 7 # Numerate starts from 1
 
@@ -15,6 +16,10 @@ params:
   pool_stride: 2
   pool_padding: 0
 
-  activation: LeakyReLU
+  activation:
+    _target_: torch.nn.LeakyReLU
 
-  rnn_type: RNN
+  rnn:
+    _target_: torch.nn.RNN
+    bidirectional: True
+    batch_first: True

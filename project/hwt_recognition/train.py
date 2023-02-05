@@ -24,7 +24,7 @@ def run(cfg: DictConfig) -> None:
     # Init every class for training
     model = Model(**cfg.model.params)
     model = model.to(cfg.device)
-    coder = Tokenizer(alphabet)
+    tokenizer = Tokenizer(alphabet)
     ctc_loss = torch.nn.CTCLoss(reduction='mean', zero_infinity=True)
     optimizer = instantiate(cfg.optim.params, params=model.parameters())
     
@@ -34,7 +34,7 @@ def run(cfg: DictConfig) -> None:
     else: 
         scheduler = None
     
-    trainer = Trainer(model, optimizer, train_dataloader, ctc_loss, coder, cfg.epochs,
+    trainer = Trainer(model, optimizer, train_dataloader, ctc_loss, tokenizer, cfg.epochs,
                       f'{cfg.model.name}_{cfg.transforms.name}_{cfg.optim.name}_{cfg.scheduler.name}',
                       alphabet, scheduler, cfg.logging, cfg.device)
     
