@@ -11,6 +11,9 @@ datasets/*
 # WANDB
 wandb
 
+# Pytorch Lightning
+lightning_logs
+
 # Hydra
 outputs
 
