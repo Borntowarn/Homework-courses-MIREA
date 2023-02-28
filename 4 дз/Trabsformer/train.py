@@ -8,12 +8,6 @@ from hydra.utils import instantiate
 from hydra.core.config_store import ConfigStore
 
 
-class Eval:
-    @staticmethod
-    def ev(self, string) -> int:
-        return eval(string)
-
-
 @dataclass
 class DataModule:
     _target_: str = 'modules.datamodule.DataModule'
@@ -34,6 +28,7 @@ class WandbLogger:
 
 @dataclass
 class Trainer:
+    _target_: str = 'pytorch_lightning.trainer.Trainer'
     accelerator: str = 'gpu'
     max_epochs: int = 10
     default_root_dir: str = './lightning'
@@ -42,6 +37,7 @@ class Trainer:
 
 @dataclass
 class VisionTransformer:
+    _target_: str = 'modules.vision_transformer.ViT'
     img_size: int = 224
     patch_size: int = 16
     in_chans: int = 3
@@ -55,6 +51,7 @@ class VisionTransformer:
 
 @dataclass
 class General:
+    epochs: int = 100
     logging: bool = False
     device: str = 'gpu'
 
