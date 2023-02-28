@@ -1,0 +1,16 @@
+name: Transformer
+
+defaults:
+  - _self_
+  - model: model1
+  - scheduler: OneCycleLR
+  - optimizer: Adam
+  - loss: CrossEntropyLoss
+  - trainer: trainer
+  - datamodule: datamodule1
+
+
+general:
+  epochs: 100
+  logging: false
+  device: gpu

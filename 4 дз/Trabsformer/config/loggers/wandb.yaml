@@ -1,0 +1,6 @@
+logging: ${general.logging}
+params:
+  _target_: pytorch_lightning.loggers.WandbLogger
+  project: First ViT
+  log_model: true 
+  name: BaseName
