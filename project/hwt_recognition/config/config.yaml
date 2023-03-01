@@ -5,7 +5,7 @@ id_resume: null # if not none wandb will continue log for this id run
 
 defaults:
   - transforms: t1 # File of transfroms config
-  - model: m1 # File of model config
+  - model: m2 # File of model config
   - scheduler: s1 # File of scheduler config or null for no scheduler
   - optim: o1 # File of optim config
   - _self_

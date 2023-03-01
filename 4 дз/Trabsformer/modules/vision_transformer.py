@@ -1,7 +1,9 @@
 import torch
+from omegaconf import OmegaConf
 import torch.nn as nn
 import pytorch_lightning as pl
 
+from typing import *
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 from .patch_embedding import PatchEmbedding
@@ -12,6 +14,7 @@ class ViT(pl.LightningModule):
   
     def __init__(
         self,
+        cfg: DictConfig,
         img_size: int = 224,
         patch_size: int = 16,
         in_chans: int = 3,
@@ -21,10 +24,9 @@ class ViT(pl.LightningModule):
         num_heads: int = 12,
         mlp_ratio: int = 4,
         drop_rate: int = 0.,
-        cfg: DictConfig = None
     ) -> None:
         super(ViT, self).__init__()
-        self.save_hyperparameters(ignore=['loss_func'])
+        self.save_hyperparameters(ignore=['loss_func', 'cfg'])
         
         # Path Embeddings, CLS Token, Position Encoding
         self.patch_embeddings = PatchEmbedding(img_size, patch_size, in_chans, emb_len)
@@ -98,7 +100,7 @@ class ViT(pl.LightningModule):
     # Конфигурируется оптимизатор
     def configure_optimizers(self):
         optimizer = instantiate(self.cfg.optimizer, params = self.parameters())
-        if self.cfg.scheduler.params.total_steps:
+        if self.cfg.scheduler.params.total_steps is not None:
             self.cfg.scheduler.params.total_steps = self.trainer.max_epochs * self.trainer.datamodule.len_train_dataloader
         scheduler = instantiate(self.cfg.scheduler.params, optimizer = optimizer)
         config = {
