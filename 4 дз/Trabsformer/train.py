@@ -14,7 +14,7 @@ class General:
     max_lr: float = 0.0004
     logging: bool = False
     device: str = 'gpu'
-    default_dir: str = ''
+    default_dir: str = hydra.utils.get_original_cwd()
 
 @dataclass
 class Config:
