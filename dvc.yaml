@@ -1,9 +1,0 @@
-stages:
-  train:
-    cmd: python "4 дз/Trabsformer/train.py"
-    deps:
-    - 4 дз/Trabsformer/conf
-    - 4 дз/Trabsformer/modules
-    - 4 дз/Trabsformer/train.py
-    outs:
-    - 4 дз/Trabsformer/weights

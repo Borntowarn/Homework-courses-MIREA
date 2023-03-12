@@ -15,7 +15,7 @@ class General:
     max_lr: float = 0.0004
     logging: bool = False
     device: str = 'gpu'
-    default_dir: str = './'
+    default_dir: str = '.'
 
 @dataclass
 class Config:
@@ -35,14 +35,14 @@ cs = ConfigStore().instance()
 cs.store(name='config', node=Config)
 cs.store(name='general', node=General)
 
-@hydra.main(config_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "conf"), config_name="config")
+@hydra.main(config_path="conf", config_name="config")
 def run(cfg: DictConfig) -> None:
 
     model = instantiate(cfg.model, cfg)
     datamodule = instantiate(cfg.datamodule)
     logger = False
     if cfg.general.logging:
-        logger = instantiate(cfg.logger, save_dir='./weights')
+        logger = instantiate(cfg.logger)
         logger.watch(model, log = 'all', log_freq=100)
     trainer = instantiate(cfg.trainer, logger=logger)
     trainer.fit(model, datamodule)

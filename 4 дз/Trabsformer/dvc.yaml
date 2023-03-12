@@ -1,0 +1,9 @@
+stages:
+  train:
+    cmd: python ./train.py
+    deps:
+    - ./conf
+    - ./modules
+    - ./train.py
+    outs:
+    - ./weights

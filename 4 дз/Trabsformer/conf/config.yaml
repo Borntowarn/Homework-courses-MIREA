@@ -12,9 +12,9 @@ defaults:
 
 
 general:
-  epochs: 10
+  epochs: 1
   batch_size: 4
-  max_lr: 0.0004
-  logging: false
+  max_lr: 0.0006
+  logging: true
   device: gpu
   default_dir: ${hydra:run.dir}/

@@ -1,4 +1,4 @@
-path="4 дз/Trabsformer"
+path="."
 
 dvc stage add -f \
     --name train \
