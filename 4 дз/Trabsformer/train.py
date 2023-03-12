@@ -1,5 +1,6 @@
 import hydra
 
+import os
 from typing import *
 from dataclasses import dataclass, field
 from omegaconf import DictConfig
@@ -14,7 +15,7 @@ class General:
     max_lr: float = 0.0004
     logging: bool = False
     device: str = 'gpu'
-    default_dir: str = hydra.utils.get_original_cwd()
+    default_dir: str = './'
 
 @dataclass
 class Config:
@@ -34,14 +35,14 @@ cs = ConfigStore().instance()
 cs.store(name='config', node=Config)
 cs.store(name='general', node=General)
 
-@hydra.main(config_path="config", config_name="config")
+@hydra.main(config_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "conf"), config_name="config")
 def run(cfg: DictConfig) -> None:
 
     model = instantiate(cfg.model, cfg)
     datamodule = instantiate(cfg.datamodule)
     logger = False
     if cfg.general.logging:
-        logger = instantiate(cfg.logger)
+        logger = instantiate(cfg.logger, save_dir='./weights')
         logger.watch(model, log = 'all', log_freq=100)
     trainer = instantiate(cfg.trainer, logger=logger)
     trainer.fit(model, datamodule)

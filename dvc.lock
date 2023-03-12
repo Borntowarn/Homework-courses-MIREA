@@ -1,0 +1,21 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: python "4 дз/Trabsformer/train.py"
+    deps:
+    - path: 4 дз/Trabsformer/conf
+      md5: e2b20d38c01cbaa60fa45f97b2b2fbc9.dir
+      size: 1409
+      nfiles: 9
+    - path: 4 дз/Trabsformer/modules
+      md5: a73317696298659d0dc4f7b9acbb0934.dir
+      size: 23531
+      nfiles: 18
+    - path: 4 дз/Trabsformer/train.py
+      md5: ec85adaeb4d39f99e20ec4cacf51d24a
+      size: 1388
+    outs:
+    - path: 4 дз/Trabsformer/weights
+      md5: fbf78c81ac798122d06d2bd158f87fa4.dir
+      size: 1029563655
+      nfiles: 3
