@@ -1,5 +1,0 @@
-_target_: modules.datamodule.DataModule
-root_dir: ${hydra:runtime.cwd}
-train_folder: dataset/validation/
-test_folder: dataset/test/
-batch_size: ${general.batch_size}

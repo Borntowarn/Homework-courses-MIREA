@@ -1,4 +1,0 @@
-params:
-  _target_: torch.optim.lr_scheduler.StepLR
-  step_size: 50
-step: 'epoch'
