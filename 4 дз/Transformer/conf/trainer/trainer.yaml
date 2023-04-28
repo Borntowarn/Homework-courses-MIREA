@@ -1,0 +1,4 @@
+_target_: pytorch_lightning.trainer.Trainer
+max_epochs: ${general.epochs}
+accelerator: ${general.device}
+default_root_dir: ${general.default_dir}/
